@@ -52,15 +52,17 @@ if args.publish:
         subprocess.run(['git','commit','-m','Launch Tier of Everything catalog and ranking editor'],cwd=ROOT,check=True)
     elif changes.returncode!=0: raise SystemExit('Unable to inspect staged changes.')
     subprocess.run(['git','push','-u','origin','main'],cwd=ROOT,env=env,check=True)
+    created_pages=False
     try: pages=api(repo_path+'/pages')
     except RuntimeError as error:
         if 'HTTP 404:' not in str(error): raise
         pages=api(repo_path+'/pages','POST',{'build_type':'workflow'})
-    api(repo_path+'/actions/workflows/pages.yml/dispatches','POST',{'ref':'main'})
+        created_pages=True
+    if created_pages:
+        api(repo_path+'/actions/workflows/pages.yml/dispatches','POST',{'ref':'main'})
     print(json.dumps({'repository':repo['html_url'],'pages_url':pages.get('html_url'),'pages_status':pages.get('status')},ensure_ascii=False))
 else:
     repo=api(repo_path);pages=api(repo_path+'/pages')
     runs=api(repo_path+'/actions/workflows/pages.yml/runs?per_page=1')['workflow_runs']
     builds=runs[0] if runs else {}
-    api(repo_path+'/actions/workflows/pages.yml/dispatches','POST',{'ref':'main'})
     print(json.dumps({'repository':repo['html_url'],'pages_url':pages.get('html_url'),'pages_status':pages.get('status'),'build_status':builds.get('status'),'conclusion':builds.get('conclusion'),'commit':builds.get('head_sha'),'run_url':builds.get('html_url')},ensure_ascii=False))
