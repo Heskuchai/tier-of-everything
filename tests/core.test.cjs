@@ -1,0 +1,11 @@
+const test=require('node:test'),assert=require('node:assert/strict');
+const C=require('../src/core.js');
+const data=require('../data/tiers.json'),lists=data.lists;
+test('search finds an item inside a differently named list',()=>{assert.equal(C.search(lists,{q:'какао'})[0].id,'drinks');});
+test('search normalizes case, whitespace and yo',()=>{assert.equal(C.search(lists,{q:'  ЧЕРНЫЙ   КОФЕ '})[0].id,'drinks');});
+test('search intersects categories and bookmarks and reports no matches',()=>{assert.equal(C.search(lists,{q:'картошка',categories:['tech']}).length,0);assert.deepEqual(C.search(lists,{savedOnly:true,saved:['potatoes']}).map(l=>l.id),['potatoes']);assert.equal(C.search(lists,{q:'несуществующийпредмет'}).length,0);});
+test('multiple categories use OR while query terms use AND',()=>{assert.equal(C.search(lists,{categories:['games','cinema']}).length,2);assert.equal(C.search(lists,{q:'какао лимоном'}).length,1);});
+test('saved maps survive new items and reject stale IDs and invalid ranks',()=>{const l=lists[0],id=l.items[0].id;const map=C.reconcile(l,{[id]:'F',missing:'A',[l.items[1].id]:'Z'});assert.equal(map[id],'F');assert.equal(map[l.items[1].id],l.items[1].tier);assert.equal(map.missing,undefined);assert.equal(Object.keys(map).length,l.items.length);});
+test('moving one item preserves all other placements and original data',()=>{const l=lists[0],source=C.author(l),id=l.items[0].id;const result=C.move(l,source,id,'D');assert.equal(result[id],'D');assert.equal(source[id],'S');assert.equal(l.items[0].tier,'S');assert.equal(Object.keys(result).length,l.items.length);assert.throws(()=>C.move(l,source,'unknown','A'));assert.throws(()=>C.move(l,source,id,'Z'));});
+test('query route roundtrip preserves Cyrillic, ampersands and filters',()=>{const filter={q:'чай & кофе',categories:['food','life'],sort:'title'};assert.deepEqual(C.parseRoute(C.route('/saved',filter)),{path:'/saved',...filter});assert.equal(C.parseRoute('#/?sort=invalid').sort,'updated');});
+test('sort by date and name is deterministic',()=>{const input=[{...lists[0],updated:'2026-01-01'},{...lists[1],updated:'2026-02-01'}];assert.equal(C.search(input)[0].id,lists[1].id);const sorted=C.search(lists,{sort:'title'});assert.equal(sorted[0].title,[...lists].sort((a,b)=>a.title.localeCompare(b.title,'ru'))[0].title);});
