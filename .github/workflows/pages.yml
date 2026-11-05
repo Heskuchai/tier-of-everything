@@ -23,8 +23,9 @@ jobs:
       - name: Check catalog and ranking logic
         run: |
           python3 -m unittest discover -s tests -p 'test_*.py'
-          node --test tests/core.test.cjs
+          node --test tests/*.test.cjs
           node --check src/app.js
+          node --check src/admin/admin.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

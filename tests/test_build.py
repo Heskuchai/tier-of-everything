@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from build import ROOT, validate
+from build import ROOT, validate, validate_image
 
 
 class CatalogTests(unittest.TestCase):
@@ -34,6 +34,18 @@ class CatalogTests(unittest.TestCase):
         self.data['lists'][0]['category'] = 'missing'
         with self.assertRaisesRegex(AssertionError, 'unknown category'):
             validate(self.data)
+
+    def test_executable_and_insecure_images_rejected(self):
+        for value in ('javascript:alert(1)', 'data:image/png;base64,AAAA', 'http://example.com/a.png', 'media/../x.webp'):
+            with self.assertRaises(AssertionError):
+                validate_image(value)
+
+    def test_missing_upload_rejected(self):
+        with self.assertRaisesRegex(AssertionError, 'Missing image'):
+            validate_image('media/nonexistent-upload.webp')
+
+    def test_https_image_accepted(self):
+        validate_image('https://example.com/image.png')
 
 
 if __name__ == '__main__':

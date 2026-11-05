@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const C=require('../src/core.js');
-const data=require('../data/tiers.json'),lists=data.lists;
+const data=require('./fixtures/catalog.json'),lists=data.lists;
 test('search finds an item inside a differently named list',()=>{assert.equal(C.search(lists,{q:'какао'})[0].id,'drinks');});
 test('search normalizes case, whitespace and yo',()=>{assert.equal(C.search(lists,{q:'  ЧЕРНЫЙ   КОФЕ '})[0].id,'drinks');});
 test('search intersects categories and bookmarks and reports no matches',()=>{assert.equal(C.search(lists,{q:'картошка',categories:['tech']}).length,0);assert.deepEqual(C.search(lists,{savedOnly:true,saved:['potatoes']}).map(l=>l.id),['potatoes']);assert.equal(C.search(lists,{q:'несуществующийпредмет'}).length,0);});
